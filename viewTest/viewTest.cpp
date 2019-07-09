@@ -83,7 +83,7 @@ bool viewTest::eventFilter(QObject *obj, QEvent *event)
 void viewTest::on_openPic_clicked()			//打开图片
 {
 	//打开文件打开对话框
-	QString filePath = QFileDialog::getOpenFileName(NULL, QObject::tr("选择图像"), ".",QObject::tr("Images (*.png *.bmp *.jpg)"));
+	QString filePath = QFileDialog::getOpenFileName(NULL, QObject::tr("选择图像"), ".",QObject::tr("Images (*.png *.bmp *.jpg *.tiff)"));
 	if (filePath.isEmpty())
 	{
 		return;//路径为空，退出
@@ -258,6 +258,8 @@ void viewTest::slot_qclicklabel_mouse_move(QMouseEvent* evt)
 			translate_image();
 		}
 	}
+	ui.label_x->setText(QString::number(evt->localPos().x()));
+	ui.label_y->setText(QString::number(evt->localPos().y()));
 }
 void viewTest::slot_qclicklabel_mouse_release(QMouseEvent* evt)
 {
@@ -298,8 +300,17 @@ void viewTest::image_show()
 		QImage img;
 		img.load("1.jpg");
 		cv::Mat tempMat = imgP_QImg2Mat(img);
-		cv::Rect rect(mouse_last_position_x, mouse_last_position_y,abs( mouse_new_position_x-mouse_last_position_x), abs(mouse_new_position_y-mouse_last_position_y));
-		cv::rectangle(tempMat, rect, cv::Scalar(255, 0, 0), 1, cv::LINE_8, 0);
+		{
+			//画框，这里用到的是画四条线的方法，这样就可以反向框了，
+			//用Rect的方法只能是从左上角到右下角的方法画，从而不能从右上角往左上角画。
+			//画线的方法可以避免这个问题
+			cv::line(tempMat, cv::Point(mouse_last_position_x, mouse_last_position_y), cv::Point(mouse_new_position_x, mouse_last_position_y), cv::Scalar(0, 0, 255), 2, 8);
+			cv::line(tempMat, cv::Point(mouse_last_position_x, mouse_last_position_y), cv::Point(mouse_last_position_x, mouse_new_position_y), cv::Scalar(0, 0, 255), 2, 8);
+			cv::line(tempMat, cv::Point(mouse_new_position_x,  mouse_new_position_y),  cv::Point(mouse_new_position_x, mouse_last_position_y), cv::Scalar(0, 0, 255), 2, 8);
+			cv::line(tempMat, cv::Point(mouse_last_position_x, mouse_new_position_y),  cv::Point(mouse_new_position_x, mouse_new_position_y), cv::Scalar(0, 0, 255), 2, 8);
+		}
+			
+		
 		qimage_temp = imgP_Mat2QImage(tempMat);
 		ui.disply_lab->setPixmap(QPixmap::fromImage(qimage_temp));
 		
